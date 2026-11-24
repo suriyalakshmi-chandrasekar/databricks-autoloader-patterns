@@ -55,8 +55,11 @@ def read_stream(spark: SparkSession, src: Source, landing_root: str, checkpoint_
         from pyspark.sql.types import StructType
         schema = StructType([f for f in schema.fields if f.name not in ("_corrupt_record", RESCUED)])
         schema = schema.add(RESCUED, "string")
-        reader = (spark.readStream.format(src.format).schema(schema)
-                  .option("mode", "PERMISSIVE").option("columnNameOfCorruptRecord", RESCUED))
+        reader = spark.readStream.format(src.format).schema(schema).option("mode", "PERMISSIVE")
+        if src.format == "json":
+            # Plain Spark CSV marks rows with fewer columns (older files, before a column was
+            # added) as corrupt, which would be wrong; Auto Loader handles that drift itself.
+            reader = reader.option("columnNameOfCorruptRecord", RESCUED)
 
     reader = reader.options(**src.options).option("recursiveFileLookup", "true")
     if src.path_glob:
