@@ -1,0 +1,45 @@
+# Three suppliers send inventory files, each in its own format, folder layout
+# and column names. One config entry per feed; one unified bronze schema out.
+# All supplier names are fictional.
+
+unified_columns: [supplier, item_id, item_name, quantity, location, event_date]
+
+sources:
+  - name: northwind_parts            # auto parts: JSON, flat folder, one file per day
+    format: json
+    path: northwind_parts/inventory
+    target: bronze.inventory_northwind
+    write_mode: append
+    schema_hints: "qty_on_hand BIGINT, last_updated STRING"
+    columns: {supplier: vendor_id, item_id: sku, item_name: product_name,
+              quantity: qty_on_hand, location: warehouse_code, event_date: last_updated}
+
+  - name: freshmart                  # grocery: pipe-delimited CSV, date-partitioned folders
+    format: csv
+    path: freshmart                  # files under YYYY/MM/DD/
+    path_glob: "*.csv"
+    options: {header: "true", sep: "|"}
+    target: bronze.inventory_freshmart
+    write_mode: append
+    columns: {supplier: supplier_code, item_id: item_code, item_name: item_description,
+              quantity: stock_level, location: store_location, event_date: extract_timestamp}
+
+  - name: medline_health_csv         # pharma: CSV and JSON mixed, one folder per vendor
+    format: csv
+    path: medline_health
+    path_glob: "*.csv"
+    options: {header: "true"}
+    target: bronze.inventory_medline
+    write_mode: merge                # vendors resend corrected files: upsert, don't duplicate
+    merge_keys: [manufacturer_id, product_id, facility_code, report_date]
+    columns: {supplier: manufacturer_id, item_id: product_id, item_name: drug_name,
+              quantity: units_available, location: facility_code, event_date: report_date}
+
+  - name: medline_health_json
+    format: json
+    path: medline_health
+    path_glob: "*.json"
+    target: bronze.inventory_medline_json
+    write_mode: append
+    columns: {supplier: manufacturer_id, item_id: product_id, item_name: drug_name,
+              quantity: units_available, location: facility_code, event_date: report_date}

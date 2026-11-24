@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alpatterns"
+version = "0.1.0"
+description = "Databricks Auto Loader ingestion patterns: multi-feed config, schema evolution, rescued data, quarantine, MERGE for re-sent files"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Suriyalakshmi Chandrasekar" }]
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6"]
+
+[project.optional-dependencies]
+spark = ["pyspark==3.5.3", "delta-spark==3.2.1"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]

@@ -1,0 +1,25 @@
+bundle:
+  name: autoloader-patterns
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+resources:
+  jobs:
+    inventory_feeds:
+      name: "[autoloader] inventory feeds"
+      schedule:
+        quartz_cron_expression: "0 0 * * * ?"     # hourly; availableNow drains new files, then stops
+        timezone_id: UTC
+        pause_status: PAUSED
+      tasks:
+        - task_key: ingest
+          max_retries: 2                          # schema evolution stops the stream once, then continues
+          notebook_task:
+            notebook_path: ./databricks/ingest_all.py
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec: { client: "2", dependencies: [pyyaml] }
