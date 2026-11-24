@@ -1,5 +1,6 @@
 """Ingest generated files end to end with Spark file streaming (the CI stand-in for Auto Loader)."""
 
+import os
 from functools import reduce
 from pathlib import Path
 
@@ -29,6 +30,8 @@ def env(tmp_path_factory):
              .config("spark.sql.shuffle.partitions", "2").config("spark.ui.enabled", "false"))
         spark = configure_spark_with_delta_pip(b).getOrCreate()
     except Exception as exc:  # noqa: BLE001
+        if os.environ.get("CI"):
+            raise                                  # in CI a missing Spark is a failure, not a skip
         pytest.skip(f"Spark not available: {exc}")
     spark.sql("CREATE SCHEMA IF NOT EXISTS bronze")
     landing, checkpoints = root / "landing", root / "chk"
